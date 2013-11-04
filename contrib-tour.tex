@@ -1,0 +1,304 @@
+\documentclass[utf8,hyperref={pdftex,colorlinks,linkcolor=black,citecolor=black,urlcolor=black,filecolor=black,plainpages=false},xcolor=table,hyperref]{beamer}
+
+% ---- Titles, etc ----
+\newcommand*{\Title}{Eine Tour durch PostgreSQL-Contrib}
+\newcommand*{\SubTitle}{Extend Your Database Server}
+\newcommand*{\Author}{Christoph Berg <christoph.berg@credativ.de>}
+
+% ---- Preamble ----
+\input{preamble/packages}
+\input{preamble/hyphenation}
+\input{preamble/settings}
+
+\usetheme{credativ}
+
+% ---- document ----
+\begin{document}
+
+\input{mainmatter/TitlePage}        % titlepage with neat logo
+\input{mainmatter/TableOfContents}  % table of contents
+
+% begin of the actual content
+% use one \input for every section
+%\input{mainmatter/Example}
+%\input{mainmatter/ExampleUnveil}
+%\input{mainmatter/ExampleBoxes}
+
+\section{Contrib}
+
+\begin{frame}
+	\frametitle{Contrib}
+fuzzystrmatch pg_trgm plsh cube autoinc chkpass lo btree_gin
+postgis_tiger_geocoder test_parser plpython3u adminpack postgis_topology prefix
+tablefunc uuid-ossp plperl earthdistance unaccent plpythonu postgres_fdw hstore
+pgstattuple insert_username pgrowlocks tcn isn pg_stat_statements
+pg_buffercache xml2 postgis moddatetime plpgsql pgcrypto pltclu pltcl intarray
+refint citext pg_freespacemap tsearch2 ltree file_fdw seg sslinfo timetravel
+dict_int btree_gist dblink plperlu pgmp plpython2u intagg pageinspect dict_xsyn
+\end{frame}
+
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION fuzzystrmatch;}
+	\begin{itemize}
+		\item Soundex: Ähnliche Namen, US-Zensus 1880
+			{\footnotesize
+		\begin{verbatim}
+# CREATE TABLE s (nm text);
+# INSERT INTO s VALUES ('john'), ('joan'), ('wobbly'), ('jack');
+# SELECT * FROM s WHERE difference(s.nm, 'john') > 2;
+  nm  
+------
+ john
+ joan
+ jack
+			  \end{verbatim}}
+		  \item Levenshtein: Abstand in Zahl der Änderungen am String
+			  {\footnotesize
+			  \begin{verbatim}
+# SELECT levenshtein('GUMBO', 'GAMBOL');
+ levenshtein
+-------------
+           2
+	   \end{verbatim}}
+   \item metaphone: Ähnlich Soundex
+	  \end{itemize}
+
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION pg_trgm;}
+	\begin{itemize}
+		\item String wird in Trigramme zerlegt \\
+			cat $\rightarrow$ "\ \ c", "\ ca", "cat", "{}at\ "
+		\item Abstand zwischen Strings: \verb|<->|
+			\begin{verbatim}
+			# select 'Oberhausen' <-> 'Essen';
+			 ?column? 
+			 ----------
+			  0.866667
+			  \end{verbatim}
+		  \item CREATE INDEX ON test_trgm USING gist (t gist_trgm_ops); \\
+			CREATE INDEX ON test_trgm USING gin (t gin_trgm_ops);
+		\item "Meinten Sie \dots?"\begin{verbatim}
+			SELECT t, t <-> 'word' AS dist
+			  FROM suchbegriffe
+			    ORDER BY dist LIMIT 10;
+			    \end{verbatim}
+		    
+	\end{itemize}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION plsh;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION cube;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION autoinc;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION chkpass;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION lo;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION btree_gin;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION postgis_tiger_geocoder;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION test_parser;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION plpython3u;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION adminpack;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION postgis_topology;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION prefix;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION tablefunc;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION uuid-ossp;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION plperl;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION earthdistance;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION unaccent;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION plpythonu;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION postgres_fdw;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION hstore;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION pgstattuple;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION insert_username;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION pgrowlocks;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION tcn;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION isn;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION pg_stat_statements;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION pg_buffercache;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION xml2;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION postgis;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION moddatetime;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION plpgsql;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION pgcrypto;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION pltclu;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION pltcl;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION intarray;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION refint;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION citext;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION pg_freespacemap;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION tsearch2;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION ltree;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION file_fdw;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION seg;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION sslinfo;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION timetravel;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION dict_int;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION btree_gist;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION dblink;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION plperlu;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION pgmp;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION plpython2u;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION intagg;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION pageinspect;}
+\end{frame}
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION dict_xsyn;}
+\end{frame}
+
+\end{document}

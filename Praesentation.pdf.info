@@ -1,0 +1,11 @@
+# -*- mode: python; coding: utf-8 -*-
+#
+# KeyJnote/Impress!ve info script
+#
+
+# "Disable" transition effects by using a simple transition together
+# with a very short transition time.
+AvailableTransitions=[Crossfade]
+TransitionDuration=10
+
+MouseHideDelay=1000

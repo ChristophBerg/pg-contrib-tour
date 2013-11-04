@@ -1,0 +1,65 @@
+% ---- these are sensitive to order, load first ----
+\usepackage{xspace}			% prevent space eating after commands
+\xspaceaddexceptions{\xspace}           % allow nested use of commands using \xspace
+\usepackage{ragged2e}			% Allow hyphenation in ragged text (e.g. by using uppercase \Centering)
+
+% ---- Fonts, encodings, symbols ----
+\usepackage[T1]{fontenc}		% font encoding defaults to latin
+\usepackage{mathptmx}			% nice fonts
+\usepackage{lmodern}			% modern latin fonts
+\usepackage{eurosym}			% Eurosymbol
+\usepackage{textcomp}			% provides copyleft symbol
+\usepackage{underscore}			% remove necessity to escape underscores
+
+% ---- Language ----
+\usepackage[english,british,ngerman]{babel}	% support for localization
+
+% define short commands providing conditionals for different languages
+\newcommand{\ifEN}[1]{%
+  \iflanguage{english}{#1}{%
+    \iflanguage{british}{#1}{}%
+  }%
+}
+\newcommand{\ifDE}[1]{%
+  \iflanguage{german}{#1}{%
+    \iflanguage{ngerman}{#1}{}%
+  }%
+}
+
+% ---- Text ----
+\usepackage[
+	babel,
+	german=quotes]{csquotes}	% Vereinheitlichte Anführungsstriche
+\usepackage{upquote}			% Anführungsstriche in Verbatim-Umgebungen
+\usepackage{comment}			% comment environment for easy multi-line comments
+\usepackage{fancyvrb}			% sophisticated verbatim text
+\usepackage{listings}			% advanced code listings
+
+% ---- watermarks ----
+\usepackage{draftwatermark}             % add draft watermark to pages
+\usepackage{everypage}                  % needed to include watermark on each page
+
+% ---- Layout - Floats, Tables, etc ----
+\usepackage{floatrow}			% grouped placement of floats (without the subfig bugs)
+\usepackage{tabularx}			% automatically calculates column-width
+\usepackage{multirow}			% join table rows
+\usepackage{booktabs}			% nicer lines between table-cells with better spacing
+\usepackage{fancyhdr}			% nicer header
+
+\usepackage[shadow]{todonotes}		% graphical notes shown in the margin
+\newcommand{\FIXME}[1]{%
+  \todo[caption={FIXME: #1},backgroundcolor=red!50,linecolor=red!50]{#1}%
+  {}%
+}
+\newcommand{\NOTE}[1]{%
+  \todo[caption={NOTE: #1},backgroundcolor=blue!50,linecolor=blue!50]{#1}%
+  {}%
+}
+\newcommand{\CHECK}[1]{%
+  \todo[caption={NOTE: #1},backgroundcolor=yellow!50,linecolor=yellow!50]{#1}%
+  {}%
+}
+\newcommand{\DONE}[1]{%
+  \todo[caption={NOTE: #1},backgroundcolor=green!50,linecolor=green!50]{#1}%
+  {}%
+}
