@@ -16,7 +16,7 @@
 \begin{document}
 
 \input{mainmatter/TitlePage}        % titlepage with neat logo
-\input{mainmatter/TableOfContents}  % table of contents
+%\input{mainmatter/TableOfContents}  % table of contents
 
 % begin of the actual content
 % use one \input for every section
@@ -24,19 +24,39 @@
 %\input{mainmatter/ExampleUnveil}
 %\input{mainmatter/ExampleBoxes}
 
-\section{Contrib}
-
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{Contrib}
-fuzzystrmatch pg_trgm plsh cube autoinc chkpass lo btree_gin
-postgis_tiger_geocoder test_parser plpython3u adminpack postgis_topology prefix
+fuzzystrmatch pg_trgm plsh cube autoinc chkpass lo btree_gin btree_gist
+test_parser plpython3u adminpack postgis_topology prefix
 tablefunc uuid-ossp plperl earthdistance unaccent plpythonu postgres_fdw hstore
 pgstattuple insert_username pgrowlocks tcn isn pg_stat_statements
 pg_buffercache xml2 postgis moddatetime plpgsql pgcrypto pltclu pltcl intarray
 refint citext pg_freespacemap tsearch2 ltree file_fdw seg sslinfo timetravel
-dict_int btree_gist dblink plperlu pgmp plpython2u intagg pageinspect dict_xsyn
+dict_int dblink plperlu pgmp plpython2u intagg pageinspect dict_xsyn
 \end{frame}
 
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION}
+	\begin{itemize}
+		\item PostgreSQL "contrib"
+		\item Viele weitere im Internet (github, pgfoundry, pgxn, \dots)
+		\item CREATE EXTENSION seit PostgreSQL 9.1
+		\item Vorher $\backslash$i /usr/share/postgresql/8.4/contrib/foobar.sql
+		\item Vereinfachtes Handling, Backup
+	\end{itemize}
+\end{frame}
+
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION "{}uuid-ossp";}
+	\begin{verbatim}
+# select uuid_generate_v1();
+           uuid_generate_v1           
+--------------------------------------
+ 6eb92d28-4634-11e3-ae7a-001f29960aed
+ \end{verbatim}
+\end{frame}
 
 \begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION fuzzystrmatch;}
@@ -89,215 +109,544 @@ dict_int btree_gist dblink plperlu pgmp plpython2u intagg pageinspect dict_xsyn
 	\end{itemize}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION plsh;}
+	\begin{verbatim}
+CREATE FUNCTION ls(text) RETURNS text AS '
+#!/bin/sh
+ls -l "$1"
+' LANGUAGE plsh;
+# select ls ('/etc/passwd');
+                          ls                          
+------------------------------------------------------
+ -rw-r--r-- 1 root root 2818 Feb  7  2013 /etc/passwd
+\end{verbatim}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION cube;}
+	\begin{itemize}
+		\item Multidimensional Cubes
+			\begin{verbatim}
+# select '(5,7)'::cube <@ '[(3,3),(8,8)]' AS punkt_im_rechteck;
+ punkt_im_rechteck 
+-------------------
+ t
+ \end{verbatim}
+ \item GiST-Support
+ \end{itemize}
+
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION autoinc;}
+	\begin{itemize}
+		\item 
+	\begin{verbatim}
+# CREATE SEQUENCE next_id;
+# CREATE TABLE ids (id int4, idesc text);
+# CREATE TRIGGER ids_nextid
+    BEFORE INSERT OR UPDATE ON ids
+    FOR EACH ROW
+    EXECUTE PROCEDURE autoinc (id, next_id);
+# INSERT INTO ids VALUES (0, 'first');
+# INSERT INTO ids VALUES (null, 'second');
+# INSERT INTO ids(idesc) VALUES ('third');
+# SELECT * FROM ids ;
+ id | idesc  
+----+--------
+  1 | first
+  2 | second
+  3 | third
+\end{verbatim}
+\item Ähnlich "{}serial"
+	\end{itemize}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION chkpass;}
+	\begin{itemize}
+		\item Speichert crypt()-Passwörter
+		\item Eingabe im Klartext
+		\item Ausgabe verschlüsselt als Hash
+		\item Vergleicht als Hash
+		\item 
+			\begin{verbatim}
+test=# create table test (p chkpass);
+test=# insert into test values ('hello');
+test=# select * from test where p = 'hello';
+       p        
+----------------
+ :fN6iG6x8Mv22M
+ \end{verbatim}
+ \end{itemize}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION lo;}
+	\begin{itemize}
+		\item Mangement von BLOB-Referenzen über Trigger
+		\item 
+			\begin{verbatim}
+CREATE TABLE image (title text, raster lo);
+
+CREATE TRIGGER t_raster BEFORE UPDATE OR DELETE ON image
+    FOR EACH ROW EXECUTE PROCEDURE lo_manage(raster);
+    \end{verbatim}
+		\item Nützlich für JDBC- und ODBC-Anwendungen
+	\end{itemize}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION btree_gin;}
+	\begin{itemize}
+		\item CREATE TABLE test (a int4);
+		\item CREATE INDEX testidx ON test USING gin (a);
+		\item Nützlich für mehrspaltige GIN-Indexe
+	\end{itemize}
 \end{frame}
 
-\begin{frame}
-	\frametitle{CREATE EXTENSION postgis_tiger_geocoder;}
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION btree_gist;}
+	\begin{itemize}
+		\item Analog btree_gin
+		\item Support für \verb|<->| (Abstand)
+		\item Support für Exclusion Constraints mit \verb|<>|
+			\begin{verbatim}
+=> CREATE TABLE zoo (
+  cage   INTEGER,
+  animal TEXT,
+  EXCLUDE USING gist (cage WITH =, animal WITH <>)
+);
+=> INSERT INTO zoo VALUES(123, 'zebra');
+=> INSERT INTO zoo VALUES(123, 'zebra');
+=> INSERT INTO zoo VALUES(123, 'lion');
+ERROR:  conflicting key value violates exclusion
+  constraint "zoo_cage_animal_excl"
+DETAIL:  Key (cage, animal)=(123, lion) conflicts with
+  existing key (cage, animal)=(123, zebra).
+=> INSERT INTO zoo VALUES(124, 'lion');
+\end{verbatim}
+\end{itemize}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION test_parser;}
+	\begin{itemize}
+		\item test_parser is an example of a custom parser for full-text search. It doesn't do anything especially useful, but can serve as a starting point for developing your own parser. 
+	\end{itemize} 
 \end{frame}
 
-\begin{frame}
-	\frametitle{CREATE EXTENSION plpython3u;}
-\end{frame}
-
-\begin{frame}
-	\frametitle{CREATE EXTENSION adminpack;}
-\end{frame}
-
-\begin{frame}
-	\frametitle{CREATE EXTENSION postgis_topology;}
-\end{frame}
-
-\begin{frame}
-	\frametitle{CREATE EXTENSION prefix;}
-\end{frame}
-
-\begin{frame}
-	\frametitle{CREATE EXTENSION tablefunc;}
-\end{frame}
-
-\begin{frame}
-	\frametitle{CREATE EXTENSION uuid-ossp;}
-\end{frame}
-
-\begin{frame}
-	\frametitle{CREATE EXTENSION plperl;}
-\end{frame}
-
-\begin{frame}
-	\frametitle{CREATE EXTENSION earthdistance;}
-\end{frame}
-
-\begin{frame}
-	\frametitle{CREATE EXTENSION unaccent;}
-\end{frame}
-
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION plpythonu;}
+	\begin{itemize}
+		\item plpython2u, plpython3u
+		\item "{}untrusted": CREATE FUNCTION nur für Superuser
+		\item
+			\begin{verbatim}
+CREATE FUNCTION pymax (a integer, b integer)
+  RETURNS integer
+AS $$
+  if a > b:
+    return a
+  return b
+$$ LANGUAGE plpythonu;
+\end{verbatim}
+	\end{itemize}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION adminpack;}
+	\begin{itemize}
+		\item Support-Funktionen für pgAdmin3 ("{}Server-Instrumentierung")
+		\item Files lesen/schreiben
+		\item postgresql.conf, pg_hba.conf, Logfiles
+	\end{itemize}
+\end{frame}
+
+%\begin{frame}[containsverbatim]
+%	\frametitle{CREATE EXTENSION postgis_topology;}
+%\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION prefix;}
+	\begin{itemize}
+		\item Präfix-Matching mit Index-Support
+		\item 
+			\begin{verbatim}
+    SELECT * 
+      FROM prefixes
+     WHERE prefix @> '01805'
+  ORDER BY length(prefix) DESC
+     LIMIT 1;
+     \end{verbatim}
+     \end{itemize}
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION tablefunc;}
+	\begin{itemize}
+		\item normal_rand, connectby
+		\item crosstab
+			{\scriptsize
+			\begin{verbatim}
+CREATE TABLE ct(id SERIAL, rowid TEXT, attribute TEXT, value TEXT);
+INSERT INTO ct(rowid, attribute, value) VALUES('test1','att1','val1');
+INSERT INTO ct(rowid, attribute, value) VALUES('test1','att2','val2');
+INSERT INTO ct(rowid, attribute, value) VALUES('test1','att3','val3');
+INSERT INTO ct(rowid, attribute, value) VALUES('test1','att4','val4');
+INSERT INTO ct(rowid, attribute, value) VALUES('test2','att1','val5');
+INSERT INTO ct(rowid, attribute, value) VALUES('test2','att2','val6');
+INSERT INTO ct(rowid, attribute, value) VALUES('test2','att3','val7');
+INSERT INTO ct(rowid, attribute, value) VALUES('test2','att4','val8');
+
+SELECT *
+FROM crosstab(
+  'select rowid, attribute, value
+   from ct
+   order by 1,2')
+AS ct(row_name text, a1 text, a2 text, a3 text, a4 text);
+ row_name |  a1  |  a2  |  a3  |  a4  
+----------+------+------+------+------
+ test1    | val1 | val2 | val3 | val4
+ test2    | val5 | val6 | val7 | val8
+ \end{verbatim}}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION plperl;}
+	\begin{itemize}
+		\item Trusted, CREATE FUNCTION für alle erlaubt
+		\item Keine Perl-Module erlaubt (use)
+		\item \begin{verbatim}
+create function match(text, text)
+  returns boolean as $$
+    ($a, $b) = @_;
+    return $a =~ $b;
+  $$ language plperl;
+\end{verbatim}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION earthdistance;}
+	\begin{verbatim}
+select earth_distance(ll_to_earth(51,6), ll_to_earth(52,10));
+  earth_distance  
+------------------
+ 298660.368346433
+ \end{verbatim}
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION unaccent;}
+	\begin{itemize}
+		\item 
+			\begin{verbatim}
+# SELECT unaccent('Hôtel');
+ unaccent 
+----------
+ Hotel
+ \end{verbatim}
+ \item Integration mit tsearch
+	 \end{itemize} 
+\end{frame}
+
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION postgres_fdw;}
+	\begin{verbatim}
+create table t (t text);
+insert into t values ('Hallo Welt');
+
+create server loopback foreign data wrapper postgres_fdw
+  options (port '5432');
+create user mapping for current_user server loopback ;
+create foreign table t2 (t text) server loopback
+  options (table_name 't');
+
+select * from t2;
+     t      
+------------
+ Hallo Welt
+\end{verbatim}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION hstore;}
+	\begin{itemize}
+		\item Perl-Style Hashes
+		\item Semi-strukturierte Daten
+		\item \begin{verbatim}
+SELECT 'name => "Berg", vorname => "Christoph",
+  firma => "credativ"'::hstore;
+                           hstore                            
+-------------------------------------------------------------
+ "name"=>"Berg", "firma"=>"credativ", "vorname"=>"Christoph"
+ \end{verbatim}
+ \item \verb|SELECT h->'name';|
+ \item Index-Support
+ \end{itemize}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION pgstattuple;}
+	\begin{itemize}
+		\item Liest ganze Tabelle oder Index
+		\item \begin{verbatim}
+SELECT * FROM pgstattuple('pg_catalog.pg_proc');
+-[ RECORD 1 ]------+-------
+table_len          | 458752
+tuple_count        | 1470
+tuple_len          | 438896
+tuple_percent      | 95.67
+dead_tuple_count   | 11
+dead_tuple_len     | 3157
+dead_tuple_percent | 0.69
+free_space         | 8932
+free_percent       | 1.95
+\end{verbatim}
+\item \begin{verbatim}
+SELECT * FROM pgstatindex('pg_cast_oid_index');
+\end{verbatim}
+\end{itemize}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION insert_username;}
+	\begin{verbatim}
+CREATE TABLE username_test (
+   name	     text,
+   username  text not null
+);
+
+CREATE TRIGGER insert_usernames
+   BEFORE INSERT OR UPDATE ON username_test
+   FOR EACH ROW
+   EXECUTE PROCEDURE insert_username (username);
+
+INSERT INTO username_test VALUES ('foobar');
+
+SELECT * FROM username_test;
+  name  | username 
+--------+----------
+ foobar | cbe
+\end{verbatim}
+
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION pgrowlocks;}
+	\small
+	\begin{verbatim}
+# select * from pgrowlocks('t');
+ locked_row | locker | multi |  xids   |     modes      | pids 
+------------+--------+-------+---------+----------------+------
+ (0,1)      |  18227 | f     | {18227} | {"For Update"} | {0}
+ \end{verbatim}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION tcn;}
+	\begin{itemize}
+		\item Triggered Change Notification
+		\item LISTEN/NOTIFY
+		\item \begin{verbatim}
+create trigger tcndata_tcn_trigger
+   after insert or update or delete on tcndata
+   for each row
+   execute procedure triggered_change_notification();
+listen tcn;
+
+Asynchronous notification "tcn" with payload
+   ""tcndata",I,"a"='2',"b"='2012-12-23'"
+   received from server process with PID 22770.
+\end{verbatim}
+\end{itemize}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION isn;}
+	\begin{verbatim}
+# SELECT ean13('4220356483487');
+      ean13      
+-----------------
+ 422-035648348-7
+# SELECT isbn('978-0-393-04002-9');
+     isbn      
+---------------
+ 0-393-04002-X
+# SELECT isbn13('0901690546');
+      isbn13       
+-------------------
+ 978-0-901690-54-8
+# SELECT issn('1436-4522');
+   issn    
+-----------
+ 1436-4522
+ \end{verbatim}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION pg_stat_statements;}
+	\begin{itemize}
+		\item Liste der ausgeführten Queries
+		\item Verbessert seit PostgreSQL 9.2
+		\item \scriptsize \begin{verbatim}
+# SELECT query, calls, total_time, rows, 100.0 * shared_blks_hit /
+               nullif(shared_blks_hit + shared_blks_read, 0) AS hit_percent
+          FROM pg_stat_statements ORDER BY total_time DESC LIMIT 5;
+-[ RECORD 1 ]---------------------------------------------------------------------
+query       | UPDATE pgbench_branches SET bbalance = bbalance + ? WHERE bid = ?;
+calls       | 3000
+total_time  | 9609.00100000002
+rows        | 2836
+hit_percent | 99.9778970000200936
+-[ RECORD 2 ]---------------------------------------------------------------------
+query       | UPDATE pgbench_tellers SET tbalance = tbalance + ? WHERE tid = ?;
+calls       | 3000
+total_time  | 8015.156
+rows        | 2990
+hit_percent | 99.9731126579631345
+-[ RECORD 3 ]---------------------------------------------------------------------
+query       | copy pgbench_accounts from stdin
+calls       | 1
+total_time  | 310.624
+rows        | 100000
+hit_percent | 0.30395136778115501520
+\end{verbatim}
+\end{itemize}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION pg_buffercache;}
+	\small
+	\begin{verbatim}
+# SELECT c.relname, count(*) AS buffers
+   FROM pg_buffercache b INNER JOIN pg_class c
+   ON b.relfilenode = pg_relation_filenode(c.oid) AND
+      b.reldatabase IN (0, (SELECT oid FROM pg_database
+                            WHERE datname = current_database()))
+   GROUP BY c.relname
+   ORDER BY 2 DESC LIMIT 10;
+            relname             | buffers 
+--------------------------------+---------
+ ranges                         |     100
+ prefixes                       |      91
+ pg_depend                      |      84
+ pg_proc                        |      80
+ idx_prefix                     |      72
+ pg_depend_reference_index      |      49
+ pg_attribute                   |      49
+ pg_depend_depender_index       |      37
+ pg_proc_proname_args_nsp_index |      35
+ prefixes_pkey                  |      35
+ \end{verbatim}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION xml2;}
+	\begin{itemize}
+		\item XML-Support ist im Core, xml2 nicht mehr benutzen
+	\end{itemize}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION postgis;}
+	\begin{itemize}
+		\item Größte Extension, eigenes Open Source-Projekt
+	\end{itemize}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION moddatetime;}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION plpgsql;}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION pgcrypto;}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION pltclu;}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION pltcl;}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION intarray;}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION refint;}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION citext;}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION pg_freespacemap;}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION tsearch2;}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION ltree;}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION file_fdw;}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION seg;}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION sslinfo;}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION timetravel;}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION dict_int;}
 \end{frame}
 
-\begin{frame}
-	\frametitle{CREATE EXTENSION btree_gist;}
-\end{frame}
-
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION dblink;}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION plperlu;}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION pgmp;}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION plpython2u;}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION intagg;}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION pageinspect;}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION dict_xsyn;}
 \end{frame}
 
