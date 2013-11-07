@@ -25,7 +25,9 @@
 %\input{mainmatter/ExampleBoxes}
 
 \begin{frame}[containsverbatim]
-	\frametitle{Contrib}
+	\frametitle{CREATE EXTENSION}
+	\verb|postgres=# CREATE EXTENSION <tab><tab>|
+
 fuzzystrmatch pg_trgm plsh cube autoinc chkpass lo btree_gin btree_gist
 test_parser plpython3u adminpack postgis_topology prefix
 tablefunc uuid-ossp plperl earthdistance unaccent plpythonu postgres_fdw hstore
@@ -39,8 +41,22 @@ dict_int dblink plperlu pgmp plpython2u intagg pageinspect dict_xsyn
 \begin{frame}
 	\frametitle{CREATE EXTENSION}
 	\begin{itemize}
+		\item Neue Funktionen
+		\item Datentypen
+		\item Index-Methoden
+		\item Procedural Languages (PL)
+		\item Trigger
+		\item Statistiken
+	\end{itemize}
+\end{frame}
+
+
+\begin{frame}
+	\frametitle{CREATE EXTENSION}
+	\begin{itemize}
 		\item PostgreSQL "contrib"
 		\item Viele weitere im Internet (github, pgfoundry, pgxn, \dots)
+		\item Debian/Ubuntu: apt.postgresql.org
 		\item CREATE EXTENSION seit PostgreSQL 9.1
 		\item Vorher $\backslash$i /usr/share/postgresql/8.4/contrib/foobar.sql
 		\item Vereinfachtes Handling, Backup
@@ -56,34 +72,6 @@ dict_int dblink plperlu pgmp plpython2u intagg pageinspect dict_xsyn
 --------------------------------------
  6eb92d28-4634-11e3-ae7a-001f29960aed
  \end{verbatim}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION fuzzystrmatch;}
-	\begin{itemize}
-		\item Soundex: Ähnliche Namen, US-Zensus 1880
-			{\footnotesize
-		\begin{verbatim}
-# CREATE TABLE s (nm text);
-# INSERT INTO s VALUES ('john'), ('joan'), ('wobbly'), ('jack');
-# SELECT * FROM s WHERE difference(s.nm, 'john') > 2;
-  nm  
-------
- john
- joan
- jack
-			  \end{verbatim}}
-		  \item Levenshtein: Abstand in Zahl der Änderungen am String
-			  {\footnotesize
-			  \begin{verbatim}
-# SELECT levenshtein('GUMBO', 'GAMBOL');
- levenshtein
--------------
-           2
-	   \end{verbatim}}
-   \item metaphone: Ähnlich Soundex
-	  \end{itemize}
-
 \end{frame}
 
 \begin{frame}[containsverbatim]
@@ -116,7 +104,8 @@ CREATE FUNCTION ls(text) RETURNS text AS '
 #!/bin/sh
 ls -l "$1"
 ' LANGUAGE plsh;
-# select ls ('/etc/passwd');
+
+SELECT ls ('/etc/passwd');
                           ls                          
 ------------------------------------------------------
  -rw-r--r-- 1 root root 2818 Feb  7  2013 /etc/passwd
@@ -135,106 +124,59 @@ ls -l "$1"
  \end{verbatim}
  \item GiST-Support
  \end{itemize}
-
 \end{frame}
 
 \begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION autoinc;}
-	\begin{itemize}
-		\item 
+	\frametitle{CREATE EXTENSION earthdistance;}
 	\begin{verbatim}
-# CREATE SEQUENCE next_id;
-# CREATE TABLE ids (id int4, idesc text);
-# CREATE TRIGGER ids_nextid
-    BEFORE INSERT OR UPDATE ON ids
-    FOR EACH ROW
-    EXECUTE PROCEDURE autoinc (id, next_id);
-# INSERT INTO ids VALUES (0, 'first');
-# INSERT INTO ids VALUES (null, 'second');
-# INSERT INTO ids(idesc) VALUES ('third');
-# SELECT * FROM ids ;
- id | idesc  
-----+--------
-  1 | first
-  2 | second
-  3 | third
-\end{verbatim}
-\item Ähnlich "{}serial"
-	\end{itemize}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION chkpass;}
-	\begin{itemize}
-		\item Speichert crypt()-Passwörter
-		\item Eingabe im Klartext
-		\item Ausgabe verschlüsselt als Hash
-		\item Vergleicht als Hash
-		\item 
-			\begin{verbatim}
-test=# create table test (p chkpass);
-test=# insert into test values ('hello');
-test=# select * from test where p = 'hello';
-       p        
-----------------
- :fN6iG6x8Mv22M
+select earth_distance(ll_to_earth(51,6), ll_to_earth(52,10));
+  earth_distance  
+------------------
+ 298660.368346433
  \end{verbatim}
- \end{itemize}
 \end{frame}
 
 \begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION lo;}
+	\frametitle{CREATE EXTENSION postgis;}
 	\begin{itemize}
-		\item Mangement von BLOB-Referenzen über Trigger
-		\item 
-			\begin{verbatim}
-CREATE TABLE image (title text, raster lo);
-
-CREATE TRIGGER t_raster BEFORE UPDATE OR DELETE ON image
-    FOR EACH ROW EXECUTE PROCEDURE lo_manage(raster);
-    \end{verbatim}
-		\item Nützlich für JDBC- und ODBC-Anwendungen
+		\item Größte Extension, eigenes Open Source-Projekt
+			\includegraphics[height=4cm]{postgis.png}
+		\item Geo-Datentypen, OpenGIS, ISO SQL/MM
+		\item "Welche Grundstücke liegen an dieser Straße?"
+		\item Raster-Daten
+		\item Routenplanung
 	\end{itemize}
 \end{frame}
 
 \begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION btree_gin;}
+	\frametitle{CREATE EXTENSION pg_stat_statements;}
 	\begin{itemize}
-		\item CREATE TABLE test (a int4);
-		\item CREATE INDEX testidx ON test USING gin (a);
-		\item Nützlich für mehrspaltige GIN-Indexe
-	\end{itemize}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION btree_gist;}
-	\begin{itemize}
-		\item Analog btree_gin
-		\item Support für \verb|<->| (Abstand)
-		\item Support für Exclusion Constraints mit \verb|<>|
-			\begin{verbatim}
-=> CREATE TABLE zoo (
-  cage   INTEGER,
-  animal TEXT,
-  EXCLUDE USING gist (cage WITH =, animal WITH <>)
-);
-=> INSERT INTO zoo VALUES(123, 'zebra');
-=> INSERT INTO zoo VALUES(123, 'zebra');
-=> INSERT INTO zoo VALUES(123, 'lion');
-ERROR:  conflicting key value violates exclusion
-  constraint "zoo_cage_animal_excl"
-DETAIL:  Key (cage, animal)=(123, lion) conflicts with
-  existing key (cage, animal)=(123, zebra).
-=> INSERT INTO zoo VALUES(124, 'lion');
+		\item Liste der ausgeführten Queries
+		\item Verbessert seit PostgreSQL 9.2
+		\item \scriptsize \begin{verbatim}
+# SELECT query, calls, total_time, rows, 100.0 * shared_blks_hit /
+               nullif(shared_blks_hit + shared_blks_read, 0) AS hit_percent
+          FROM pg_stat_statements ORDER BY total_time DESC LIMIT 5;
+-[ RECORD 1 ]---------------------------------------------------------------------
+query       | UPDATE pgbench_branches SET bbalance = bbalance + ? WHERE bid = ?;
+calls       | 3000
+total_time  | 9609.00100000002
+rows        | 2836
+hit_percent | 99.9778970000200936
+-[ RECORD 2 ]---------------------------------------------------------------------
+query       | UPDATE pgbench_tellers SET tbalance = tbalance + ? WHERE tid = ?;
+calls       | 3000
+total_time  | 8015.156
+rows        | 2990
+hit_percent | 99.9731126579631345
+-[ RECORD 3 ]---------------------------------------------------------------------
+query       | copy pgbench_accounts from stdin
+calls       | 1
+total_time  | 310.624
+rows        | 100000
+hit_percent | 0.30395136778115501520
 \end{verbatim}
 \end{itemize}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION test_parser;}
-	\begin{itemize}
-		\item test_parser is an example of a custom parser for full-text search. It doesn't do anything especially useful, but can serve as a starting point for developing your own parser. 
-	\end{itemize} 
 \end{frame}
 
 \begin{frame}[containsverbatim]
@@ -330,30 +272,6 @@ create function match(text, text)
 \end{frame}
 
 \begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION earthdistance;}
-	\begin{verbatim}
-select earth_distance(ll_to_earth(51,6), ll_to_earth(52,10));
-  earth_distance  
-------------------
- 298660.368346433
- \end{verbatim}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION unaccent;}
-	\begin{itemize}
-		\item 
-			\begin{verbatim}
-# SELECT unaccent('Hôtel');
- unaccent 
-----------
- Hotel
- \end{verbatim}
- \item Integration mit tsearch
-	 \end{itemize} 
-\end{frame}
-
-\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION postgres_fdw;}
 	\begin{verbatim}
 create table t (t text);
@@ -373,6 +291,22 @@ select * from t2;
 \end{frame}
 
 \begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION dblink;}
+	\begin{itemize}
+		\item Zugriff auf andere PostgreSQL-Datenbanken
+		\item Älteres Interface als postgres_fdw
+		\item \begin{verbatim}
+CREATE VIEW myremote_pg_proc AS
+  SELECT *
+    FROM dblink('dbname=postgres', 'select proname, prosrc from pg_proc')
+    AS t1(proname name, prosrc text);
+
+SELECT * FROM myremote_pg_proc WHERE proname LIKE 'bytea%';
+\end{verbatim}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION hstore;}
 	\begin{itemize}
 		\item Perl-Style Hashes
@@ -387,6 +321,139 @@ SELECT 'name => "Berg", vorname => "Christoph",
  \item \verb|SELECT h->'name';|
  \item Index-Support
  \end{itemize}
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION plpgsql;}
+	\begin{itemize}
+		\item PL/pgSQL: SQL + prozedurale Elemente
+		\item Per Default installiert
+		\item \small
+			\begin{verbatim}
+CREATE OR REPLACE FUNCTION get_all_foo() RETURNS SETOF foo AS
+$BODY$
+DECLARE
+    r foo%rowtype;
+BEGIN
+    FOR r IN
+        SELECT * FROM foo WHERE fooid > 0
+    LOOP
+        -- can do some processing here
+        RETURN NEXT r; -- return current row of SELECT
+    END LOOP;
+    RETURN;
+END
+$BODY$
+LANGUAGE plpgsql;
+
+SELECT * FROM get_all_foo();
+\end{verbatim}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION autoinc;}
+	\begin{itemize}
+		\item 
+	\begin{verbatim}
+# CREATE SEQUENCE next_id;
+# CREATE TABLE ids (id int4, idesc text);
+# CREATE TRIGGER ids_nextid
+    BEFORE INSERT OR UPDATE ON ids
+    FOR EACH ROW
+    EXECUTE PROCEDURE autoinc (id, next_id);
+# INSERT INTO ids VALUES (0, 'first');
+# INSERT INTO ids VALUES (null, 'second');
+# INSERT INTO ids(idesc) VALUES ('third');
+# SELECT * FROM ids ;
+ id | idesc  
+----+--------
+  1 | first
+  2 | second
+  3 | third
+\end{verbatim}
+\item Ähnlich "{}serial"
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION chkpass;}
+	\begin{itemize}
+		\item Speichert crypt()-Passwörter
+		\item Eingabe im Klartext
+		\item Ausgabe verschlüsselt als Hash
+		\item Vergleicht als Hash
+		\item 
+			\begin{verbatim}
+test=# create table test (p chkpass);
+test=# insert into test values ('hello');
+test=# select * from test where p = 'hello';
+       p        
+----------------
+ :fN6iG6x8Mv22M
+ \end{verbatim}
+ \end{itemize}
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION fuzzystrmatch;}
+	\begin{itemize}
+		\item Soundex: Ähnliche Namen, US-Zensus 1880
+			{\footnotesize
+		\begin{verbatim}
+# CREATE TABLE s (nm text);
+# INSERT INTO s VALUES ('john'), ('joan'), ('wobbly'), ('jack');
+# SELECT * FROM s WHERE difference(s.nm, 'john') > 2;
+  nm  
+------
+ john
+ joan
+ jack
+			  \end{verbatim}}
+		  \item Levenshtein: Abstand in Zahl der Änderungen am String
+			  {\footnotesize
+			  \begin{verbatim}
+# SELECT levenshtein('GUMBO', 'GAMBOL');
+ levenshtein
+-------------
+           2
+	   \end{verbatim}}
+   \item metaphone: Ähnlich Soundex
+	  \end{itemize}
+
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION btree_gin;}
+	\begin{itemize}
+		\item CREATE TABLE test (a int4);
+		\item CREATE INDEX testidx ON test USING gin (a);
+		\item Nützlich für mehrspaltige GIN-Indexe
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION btree_gist;}
+	\begin{itemize}
+		\item Analog btree_gin
+		\item Support für \verb|<->| (Abstand)
+		\item Support für Exclusion Constraints mit \verb|<>|
+			\begin{verbatim}
+=> CREATE TABLE zoo (
+  cage   INTEGER,
+  animal TEXT,
+  EXCLUDE USING gist (cage WITH =, animal WITH <>)
+);
+=> INSERT INTO zoo VALUES(123, 'zebra');
+=> INSERT INTO zoo VALUES(123, 'zebra');
+=> INSERT INTO zoo VALUES(123, 'lion');
+ERROR:  conflicting key value violates exclusion
+  constraint "zoo_cage_animal_excl"
+DETAIL:  Key (cage, animal)=(123, lion) conflicts with
+  existing key (cage, animal)=(123, zebra).
+=> INSERT INTO zoo VALUES(124, 'lion');
+\end{verbatim}
+\end{itemize}
 \end{frame}
 
 \begin{frame}[containsverbatim]
@@ -413,6 +480,35 @@ SELECT * FROM pgstatindex('pg_cast_oid_index');
 \end{frame}
 
 \begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION unaccent;}
+	\begin{itemize}
+		\item 
+			\begin{verbatim}
+# SELECT unaccent('Hôtel');
+ unaccent 
+----------
+ Hotel
+ \end{verbatim}
+ \item Integration mit tsearch
+	 \end{itemize} 
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION lo;}
+	\begin{itemize}
+		\item Mangement von BLOB-Referenzen über Trigger
+		\item 
+			\begin{verbatim}
+CREATE TABLE image (title text, raster lo);
+
+CREATE TRIGGER t_raster BEFORE UPDATE OR DELETE ON image
+    FOR EACH ROW EXECUTE PROCEDURE lo_manage(raster);
+    \end{verbatim}
+		\item Nützlich für JDBC- und ODBC-Anwendungen
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION insert_username;}
 	\begin{verbatim}
 CREATE TABLE username_test (
@@ -433,36 +529,6 @@ SELECT * FROM username_test;
  foobar | cbe
 \end{verbatim}
 
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION pgrowlocks;}
-	\small
-	\begin{verbatim}
-# select * from pgrowlocks('t');
- locked_row | locker | multi |  xids   |     modes      | pids 
-------------+--------+-------+---------+----------------+------
- (0,1)      |  18227 | f     | {18227} | {"For Update"} | {0}
- \end{verbatim}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION tcn;}
-	\begin{itemize}
-		\item Triggered Change Notification
-		\item LISTEN/NOTIFY
-		\item \begin{verbatim}
-create trigger tcndata_tcn_trigger
-   after insert or update or delete on tcndata
-   for each row
-   execute procedure triggered_change_notification();
-listen tcn;
-
-Asynchronous notification "tcn" with payload
-   ""tcndata",I,"a"='2',"b"='2012-12-23'"
-   received from server process with PID 22770.
-\end{verbatim}
-\end{itemize}
 \end{frame}
 
 \begin{frame}[containsverbatim]
@@ -488,32 +554,19 @@ Asynchronous notification "tcn" with payload
 \end{frame}
 
 \begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION pg_stat_statements;}
+	\frametitle{CREATE EXTENSION citext;}
 	\begin{itemize}
-		\item Liste der ausgeführten Queries
-		\item Verbessert seit PostgreSQL 9.2
-		\item \scriptsize \begin{verbatim}
-# SELECT query, calls, total_time, rows, 100.0 * shared_blks_hit /
-               nullif(shared_blks_hit + shared_blks_read, 0) AS hit_percent
-          FROM pg_stat_statements ORDER BY total_time DESC LIMIT 5;
--[ RECORD 1 ]---------------------------------------------------------------------
-query       | UPDATE pgbench_branches SET bbalance = bbalance + ? WHERE bid = ?;
-calls       | 3000
-total_time  | 9609.00100000002
-rows        | 2836
-hit_percent | 99.9778970000200936
--[ RECORD 2 ]---------------------------------------------------------------------
-query       | UPDATE pgbench_tellers SET tbalance = tbalance + ? WHERE tid = ?;
-calls       | 3000
-total_time  | 8015.156
-rows        | 2990
-hit_percent | 99.9731126579631345
--[ RECORD 3 ]---------------------------------------------------------------------
-query       | copy pgbench_accounts from stdin
-calls       | 1
-total_time  | 310.624
-rows        | 100000
-hit_percent | 0.30395136778115501520
+		\item Case-insensitive text type
+		\item Transparente Konvertierung groß/klein
+		\item \begin{verbatim}
+CREATE TABLE users (
+    nick CITEXT PRIMARY KEY,
+    pass TEXT   NOT NULL
+);
+
+INSERT INTO users VALUES ('larry', md5(random()::text));
+
+SELECT * FROM users WHERE nick = 'Larry';
 \end{verbatim}
 \end{itemize}
 \end{frame}
@@ -544,110 +597,196 @@ hit_percent | 0.30395136778115501520
  \end{verbatim}
 \end{frame}
 
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION xml2;}
-	\begin{itemize}
-		\item XML-Support ist im Core, xml2 nicht mehr benutzen
-	\end{itemize}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION postgis;}
-	\begin{itemize}
-		\item Größte Extension, eigenes Open Source-Projekt
-	\end{itemize}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION moddatetime;}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION plpgsql;}
-\end{frame}
+%\begin{frame}[containsverbatim]
+%	\frametitle{CREATE EXTENSION xml2;}
+%	\begin{itemize}
+%		\item XML-Support ist im Core, xml2 nicht mehr benutzen
+%	\end{itemize}
+%\end{frame}
 
 \begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION pgcrypto;}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION pltclu;}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION pltcl;}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION intarray;}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION refint;}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION citext;}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION pg_freespacemap;}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION tsearch2;}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION ltree;}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION file_fdw;}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION seg;}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION sslinfo;}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION timetravel;}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION dict_int;}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION dblink;}
-\end{frame}
-
-\begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION plperlu;}
+	\begin{itemize}
+		\item Kryptographische Funktionen
+		\item Hashes: md5, sha1, sha256, \dots (OpenSSL)
+		\item hmac()
+		\item crypt()
+		\item OpenPGP
+			\begin{itemize}
+				\item pgp_sym_encrypt(), pgp_sym_decrypt()
+				\item pgp_pub_encrypt(), pgp_pub_decrypt()
+			\end{itemize}
+		\item gen_random_bytes()
+	\end{itemize}
 \end{frame}
 
 \begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION pgmp;}
+	\begin{itemize}
+		\item GNU Multi Precision library
+		\item Große Integer, Primzahlen
+		\item Rationale Zahlen (Brüche)
+	\begin{verbatim}
+select '3/8'::mpq + '5/6'::mpq as fraction;
+ fraction 
+----------
+ 29/24
+ \end{verbatim}
+ \end{itemize}
 \end{frame}
 
 \begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION plpython2u;}
+	\frametitle{CREATE EXTENSION tcn;}
+	\begin{itemize}
+		\item Triggered Change Notification
+		\item LISTEN/NOTIFY
+		\item \begin{verbatim}
+create trigger tcndata_tcn_trigger
+   after insert or update or delete on tcndata
+   for each row
+   execute procedure triggered_change_notification();
+listen tcn;
+
+Asynchronous notification "tcn" with payload
+   ""tcndata",I,"a"='2',"b"='2012-12-23'"
+   received from server process with PID 22770.
+\end{verbatim}
+\end{itemize}
 \end{frame}
 
 \begin{frame}[containsverbatim]
-	\frametitle{CREATE EXTENSION intagg;}
+	\frametitle{CREATE EXTENSION pgrowlocks;}
+	\small
+	\begin{verbatim}
+# select * from pgrowlocks('tbl');
+ locked_row | locker | multi |  xids   |     modes      | pids 
+------------+--------+-------+---------+----------------+------
+ (0,1)      |  18227 | f     | {18227} | {"For Update"} | {0}
+ \end{verbatim}
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION pg_freespacemap;}
+	\begin{itemize}
+		\item Freier Platz in Tabellenblöcken
+		\item
+			\begin{verbatim}
+# SELECT * FROM pg_freespace('foo');
+ blkno | avail 
+-------+-------
+     0 |     0
+     1 |     0
+     2 |     0
+     3 |    32
+     4 |   704
+     5 |   704
+     6 |   704
+     7 |  1216
+     \end{verbatim}
+     \item Selten notwendig
+	     \end{itemize}
+\end{frame}
+
+%\begin{frame}[containsverbatim]
+%	\frametitle{CREATE EXTENSION tsearch2;}
+%\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION ltree;}
+	This module implements a data type ltree for representing labels of data stored in a hierarchical tree-like structure. Extensive facilities for searching through label trees are provided.
+
+	\begin{verbatim}
+ltreetest=> SELECT path FROM test WHERE path <@ 'Top.Science';
+                path
+------------------------------------
+ Top.Science
+ Top.Science.Astronomy
+ Top.Science.Astronomy.Astrophysics
+ Top.Science.Astronomy.Cosmology
+ \end{verbatim}
 \end{frame}
 
 \begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION pageinspect;}
+	\begin{itemize}
+		\item Block-level debugging
+		\item get_raw_page(), page_header(), heap_page_items()
+		\item bt_metap(), bt_page_stats(), bt_page_items()
+		\item fsm_page_contents
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION file_fdw;}
+	The file_fdw module provides the foreign-data wrapper file_fdw, which can be used to access data files in the server's file system. Data files must be in a format that can be read by COPY FROM; see COPY for details. Access to such data files is currently read-only. 
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION pltcl;}
+	\begin{itemize}
+		\item pltcl, pltclu
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION seg;}
+	This module implements a data type seg for representing line segments, or floating point intervals. seg can represent uncertainty in the interval endpoints, making it especially useful for representing laboratory measurements. 
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION sslinfo;}
+	The sslinfo module provides information about the SSL certificate that the current client provided when connecting to PostgreSQL. The module is useless (most functions will return NULL) if the current connection does not use SSL. 
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION timetravel;}
+	 Long ago, PostgreSQL had a built-in time travel feature that kept the insert and delete times for each tuple. This can be emulated using these functions. To use these functions, you must add to a table two columns of abstime type to store the date when a tuple was inserted (start_date) and changed/deleted (stop_date):
+
+	 \begin{verbatim}
+CREATE TABLE mytab (
+        ...             ...
+        start_date      abstime,
+        stop_date       abstime
+        ...             ...
+);
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION dict_int;}
+	dict_int is an example of an add-on dictionary template for full-text search. The motivation for this example dictionary is to control the indexing of integers (signed and unsigned), allowing such numbers to be indexed while preventing excessive growth in the number of unique words, which greatly affects the performance of searching. 
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION intarray;}
+	The intarray module provides a number of useful functions and operators for manipulating null-free arrays of integers. There is also support for indexed searches using some of the operators. 
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION intagg;}
+	The intagg module provides an integer aggregator and an enumerator. intagg is now obsolete, because there are built-in functions that provide a superset of its capabilities. However, the module is still provided as a compatibility wrapper around the built-in functions. 
 \end{frame}
 
 \begin{frame}[containsverbatim]
 	\frametitle{CREATE EXTENSION dict_xsyn;}
+	dict_xsyn (Extended Synonym Dictionary) is an example of an add-on dictionary template for full-text search. This dictionary type replaces words with groups of their synonyms, and so makes it possible to search for a word using any of its synonyms. 
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION moddatetime;}
+	moddatetime() is a trigger that stores the current time into a timestamp field. This can be useful for tracking the last modification time of a particular row within a table. 
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION refint;}
+	Functions for Implementing Referential Integrity
+\end{frame}
+
+\begin{frame}[containsverbatim]
+	\frametitle{CREATE EXTENSION test_parser;}
+	\begin{itemize}
+		\item test_parser is an example of a custom parser for full-text search. It doesn't do anything especially useful, but can serve as a starting point for developing your own parser. 
+	\end{itemize} 
 \end{frame}
 
 \end{document}
